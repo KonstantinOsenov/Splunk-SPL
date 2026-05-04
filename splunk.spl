@@ -1,0 +1,117 @@
+----------------------------------------------------------------
+------ filters
+----------------------------------------------------------------
+
+index=abc*abc* logtype=abc AND some_attr="abc" AND NOT some_attr='abc' AND some_attr>=400
+| search some_attr='asd' OR some_attr='fgh'
+| where isnotnull(some_attr)
+| where some_attr like "DK%" 
+| where some_attr != "abc"
+| where some_attr IN ("asd", "asd2")
+
+----------------------------------------------------------------
+------ new attributes
+----------------------------------------------------------------
+
+| eval some_attr = case(some_attr_1=="a", "1", some_attr_1=="qqq", "2", 1==1, "3") ```  1==1 - default value  ```
+| iplocation ip_address  ```  adds new attributes. f.ex. "Country" ```
+| eval some_attr = coalesce(some_attr_1, some_attr_2)
+
+```  strings  ```
+| eval some_attr = replace(some_attr_1,"\'","")
+| eval some_attr = substr(some_attr_1,4,4)
+| eval some_attr = rtrim(some_attr_1, ".zip")
+
+```  date and time ```
+| eval date_day     = strftime(_time, "%Y-%m-%d")
+| eval date_day_utc = strftime(_time-3600, "%Y-%m-%d")
+| eval yesterday 	= strftime(relative_time(time(), "-d"), "%Y-%m-%d")
+| eval some_date	= strftime(relative_time(time(), "-d"), "%Y-%m-%d %H:%M:%S.%N") ``` -1 day (24h) ```
+| eval today 		= strftime(relative_time(time(), "@d"), "%Y-%m-%d %H:%M:%S.%N") ``` start of the day ```
+| eval some_date	= strftime(relative_time(time(), "-25h"), "%Y-%m-%d %H:%M:%S.%N") ``` -25h ```
+| eval some_date	= strftime(relative_time(time(), "+h"), "%Y-%m-%d %H:%M:%S.%N") ``` +1h ```
+
+| eval time_hour 	= strftime(_time,"%Y-%m-%d %H:00:00")
+| eval time_day  	= strftime(_time,"%Y-%m-%d 00:00:00")
+| eval time 	 	= strftime(_time,"%Y-%m-%d %H:%M:%S.%N")  
+| eval new_time 	= strftime(_time + 7200, "%Y-%m-%dT%H:%M:%S.%QZ")
+
+```  agg  ```
+| stats count 				as some_attr1, 
+        sum(some_attr) 		as some_attr2, 
+		avg(some_attr) 		as some_attr3,
+        stdev(some_attr) 	as some_attr4,
+		distinct_count(some_attr) 
+    by some_attr7, some_attr8
+| stats values(*) as * by some_attr  ```  put all values to one value for all attributes grouped by some_attr  ```
+
+		
+```  numbers  ```
+| eval some_attr = round(some_attr1/some_attr2*100,2)
+
+```  regexp  ```
+| rex "SomeText=\'(?<new_attr_name>.*?)\' MoreText="
+
+```  other  ```
+| rename some_attr1 AS some_attr2
+| rename some_attr_group.* as *
+| fillnull value='unknown' some_attr 
+
+```  select and output ```
+| table some_attr1, some_attr2
+| sort -some_attr1
+| sort some_attr2 desc
+| uniq
+| head 100
+
+| append [ search ... ] ``` ~ SQL "union"  ```
+
+
+```  files  ```
+| lookup some_file.csv some_attr1, some_attr2 ```  1 or more attributes with the same name (splunk and files)  ```
+| inputlookup some_file.csv ```  Check for null values in a lookup table (otherwise it will be filtered out)  ```
+
+
+```  arrays  ```
+| makemv delim="|" new_field ```  Converts a single valued field into a multivalue field   ```
+| eval new_field_split_count = mvcount(new_field) 
+
+| eval some_attr  = split(some_attr2,"\\") 
+| eval some_attr3 = mvindex(some_attr,5)
+
+| eval some_attr_string = mvjoin(some_attr, ", ")
+
+```  visual  ```
+| bucket span=4hr _time
+| bin _time span=30m 
+| timechart count span=1m by some_attr limit=5 useother=f
+| predict count future_timespan=60
+
+----------------------------------------------------------------
+------ all indexes
+----------------------------------------------------------------
+| eventcount summarize=false index=* | dedup index | fields index
+
+----------------------------------------------------------------
+------ other
+----------------------------------------------------------------
+comments - ```    ```
+```
+
+<option name="charting.seriesColors">
+        [0x006d9c, 0x4fa484, 0xec9960, 0xaf575a]
+        </option>
+red 0xd6563c -- af575a
+blue 0x3863a0 -- 006d9c
+orange 0xffb380 -- ec9960
+green 0x00b290 or 0x3d9988 -- 4fa484
+
+----------------------------------------------------------------
+------ some notes
+----------------------------------------------------------------
+search 
+	not necessary for the first row
+	AND, OR, NOT- capital letters
+	space is equal to AND
+	it's possible to use brackets to set ups the right order
+	it's possible to use * instead of real values. For example "*@gmail.com" - this statement will return all the emails with "@gmail.com" domain.
