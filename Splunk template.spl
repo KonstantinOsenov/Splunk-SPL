@@ -87,6 +87,11 @@ index=abc*abc* logtype=abc AND some_attr="abc" AND NOT some_attr='abc' AND some_
 | timechart count span=1m by some_attr limit=5 useother=f
 | predict count future_timespan=60
 
+```  IP ADDRESS  ```
+index=index_name
+| iplocation ip_address_attr
+| rename Country AS IP_country
+
 ----------------------------------------------------------------
 ------ all indexes
 ----------------------------------------------------------------
